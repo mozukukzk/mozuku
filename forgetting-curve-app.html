@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure AI-900 学習記録アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .tab {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: white;
+            color: #0078d4;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tab.active:hover {
+            background: white;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .quiz-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .input-section h2, .quiz-section h2 {
+            color: #0078d4;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 120, 212, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #40e0d0 0%, #20b2aa 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .memory-level {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .level-display {
+            font-size: 4em;
+            font-weight: bold;
+            color: #0078d4;
+            margin: 20px 0;
+            animation: pulse 2s infinite;
+        }
+
+        .level-label {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+
+        .study-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .study-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .study-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .study-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .study-item-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .study-item-date {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .study-item-retention {
+            font-size: 0.9em;
+            color: #0078d4;
+            margin-top: 5px;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .quiz-question {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .quiz-question h3 {
+            color: #0078d4;
+            margin-bottom: 20px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .quiz-option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-option:hover {
+            border-color: #0078d4;
+            background: #f0f8ff;
+        }
+
+        .quiz-option.selected {
+            border-color: #0078d4;
+            background: #e6f3ff;
+        }
+
+        .quiz-option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .quiz-feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .quiz-feedback.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .quiz-feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .quiz-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h4 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #0078d4;
+        }
+
+        .category-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e6f3ff;
+            color: #0078d4;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Azure AI-900 学習記録アプリ</h1>
+            <p>Microsoft Azure AI Fundamentals 試験対策 - エビングハウスの忘却曲線で効率的に学習</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('study')">学習記録</button>
+            <button class="tab" onclick="switchTab('quiz')">問題演習</button>
+        </div>
+
+        <div id="studySection" class="study-section">
+            <div class="main-content">
+                <div class="panel">
+                    <div class="input-section">
+                        <h2>AI-900 学習内容を記録</h2>
+                        <form id="studyForm">
+                            <div class="form-group">
+                                <label for="category">カテゴリー</label>
+                                <select id="category" required>
+                                    <option value="">カテゴリーを選択してください</option>
+                                    <option value="AI概要">AIの概要</option>
+                                    <option value="機械学習">機械学習の基礎</option>
+                                    <option value="Computer Vision">Computer Vision</option>
+                                    <option value="NLP">自然言語処理 (NLP)</option>
+                                    <option value="会話型AI">会話型AI</option>
+                                    <option value="責任あるAI">責任あるAI</option>
+                                    <option value="Azure AI Services">Azure AI Services</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="topic">学習トピック</label>
+                                <input type="text" id="topic" placeholder="例: Azure Computer Vision の画像分析機能" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="details">学習内容の詳細</label>
+                                <textarea id="details" placeholder="学習した内容を詳しく記入してください。&#10;例: Computer Visionは画像から物体、人物、テキストを検出。OCR機能でテキスト抽出が可能。" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="question">問題</label>
+                                <textarea id="question" placeholder="試験問題を記入してください。&#10;例: Azure Computer Visionで実行できるタスクはどれですか？"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="answer">答え</label>
+                                <textarea id="answer" placeholder="問題の答えを記入してください。&#10;例: 画像分析、OCR、顔検出、物体検出など"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="difficulty">理解度</label>
+                                <select id="difficulty">
+                                    <option value="1">完璧に理解（100%）</option>
+                                    <option value="0.8">ほぼ理解（80%）</option>
+                                    <option value="0.6">まあまあ理解（60%）</option>
+                                    <option value="0.4">少し理解（40%）</option>
+                                    <option value="0.2">ほとんど理解できず（20%）</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn">学習内容を記録</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="memory-level">
+                        <div class="level-label">AI-900 総合記憶レベル</div>
+                        <div class="level-display" id="memoryLevel">0</div>
+                        <div class="level-label">/ 100</div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="forgettingCurveChart"></canvas>
+                    </div>
+
+                    <h2 style="color: #0078d4; margin-bottom: 20px;">学習履歴</h2>
+                    <div class="study-list" id="studyList">
+                        <div class="empty-state">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 11H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-3"></path>
+                                <rect x="8" y="2" width="8" height="11" rx="1"></rect>
+                            </svg>
+                            <p>まだ学習記録がありません</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="quizSection" class="quiz-section hidden">
+            <div class="quiz-content">
+                <div class="panel">
+                    <h2>AI-900 問題演習</h2>
+                    
+                    <div class="quiz-stats">
+                        <div class="stat-card">
+                            <h4>本日の問題数</h4>
+                            <div class="value" id="todayQuestions">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>正答率</h4>
+                            <div class="value" id="correctRate">0%</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>連続正解数</h4>
+                            <div class="value" id="streak">0</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quizCategory">出題カテゴリー</label>
+                        <select id="quizCategory">
+                            <option value="all">すべてのカテゴリー</option>
+                            <option value="AI概要">AIの概要</option>
+                            <option value="機械学習">機械学習の基礎</option>
+                            <option value="Computer Vision">Computer Vision</option>
+                            <option value="NLP">自然言語処理 (NLP)</option>
+                            <option value="会話型AI">会話型AI</option>
+                            <option value="責任あるAI">責任あるAI</option>
+                            <option value="Azure AI Services">Azure AI Services</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="generateQuiz()">問題を生成</button>
+
+                    <div id="quizContent" style="margin-top: 30px;">
+                        <!-- 問題がここに表示されます -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // 学習記録を保存する配列
+        let studyRecords = [];
+        
+        // クイズ統計
+        let quizStats = {
+            today: 0,
+            correct: 0,
+            total: 0,
+            streak: 0
+        };
+
+        // Chart.js のインスタンス
+        let chart = null;
+
+        // 現在のタブ
+        let currentTab = 'study';
+
+        // ページ読み込み時の処理
+        window.addEventListener('DOMContentLoaded', function() {
+            // 初期化処理
+            console.log('アプリケーションを初期化しています...');
+            updateMemoryLevel();
+            updateStudyList();
+            drawChart();
+        });
+
+        // AI-900 問題プール
+        const quizPool = {
+            'AI概要': [
+                {
+                    question: "人工知能（AI）の定義として最も適切なものはどれですか？",
+                    options: [
+                        "人間のように考えるコンピューター",
+                        "人間の知的活動をコンピューターで実現する技術",
+                        "自動的にプログラムを作成するシステム",
+                        "インターネット上の情報を収集するシステム"
+                    ],
+                    correct: 1,
+                    explanation: "AIは人間の知的活動（学習、推論、認識など）をコンピューターで実現する技術です。"
+                },
+                {
+                    question: "機械学習とAIの関係について正しいものはどれですか？",
+                    options: [
+                        "機械学習とAIは同じもの",
+                        "機械学習はAIの一部分",
+                        "AIは機械学習の一部分",
+                        "機械学習とAIは全く別のもの"
+                    ],
+                    correct: 1,
+                    explanation: "機械学習はAIの一分野であり、データから学習して予測や分類を行う技術です。"
+                }
+            ],
+            '機械学習': [
+                {
+                    question: "教師あり学習の例として適切なものはどれですか？",
+                    options: [
+                        "顧客をグループに分ける",
+                        "メールのスパム分類",
+                        "商品の推薦システム",
+                        "異常値の検出"
+                    ],
+                    correct: 1,
+                    explanation: "スパム分類は、ラベル付きデータ（スパム/非スパム）を使って学習する教師あり学習の典型例です。"
+                },
+                {
+                    question: "回帰問題の例として適切なものはどれですか？",
+                    options: [
+                        "画像の犬猫分類",
+                        "住宅価格の予測",
+                        "顧客のクラスタリング",
+                        "異常取引の検出"
+                    ],
+                    correct: 1,
+                    explanation: "住宅価格の予測は連続値を予測する回帰問題です。"
+                }
+            ],
+            'Computer Vision': [
+                {
+                    question: "Azure Computer Visionで実行できないタスクはどれですか？",
+                    options: [
+                        "画像内のテキスト抽出（OCR）",
+                        "物体の検出と分類",
+                        "音声の文字起こし",
+                        "画像のタグ付け"
+                    ],
+                    correct: 2,
+                    explanation: "音声の文字起こしはComputer Visionではなく、Speech Servicesの機能です。"
+                },
+                {
+                    question: "OCR（光学文字認識）の主な用途は何ですか？",
+                    options: [
+                        "音声をテキストに変換",
+                        "画像からテキストを抽出",
+                        "テキストを音声に変換",
+                        "テキストを翻訳"
+                    ],
+                    correct: 1,
+                    explanation: "OCRは画像や文書からテキストを抽出する技術です。"
+                }
+            ],
+            'NLP': [
+                {
+                    question: "自然言語処理（NLP）のタスクでないものはどれですか？",
+                    options: [
+                        "感情分析",
+                        "キーフレーズ抽出",
+                        "顔認識",
+                        "言語検出"
+                    ],
+                    correct: 2,
+                    explanation: "顔認識はComputer Visionのタスクであり、NLPではありません。"
+                },
+                {
+                    question: "Azure Text Analyticsで実行できるタスクはどれですか？",
+                    options: [
+                        "画像分析",
+                        "感情分析",
+                        "音声認識",
+                        "動画処理"
+                    ],
+                    correct: 1,
+                    explanation: "Text Analyticsは感情分析、キーフレーズ抽出、言語検出などのテキスト分析を行います。"
+                }
+            ],
+            '会話型AI': [
+                {
+                    question: "Azure Bot Serviceの主な用途は何ですか？",
+                    options: [
+                        "画像認識",
+                        "チャットボットの作成",
+                        "データ分析",
+                        "Webサイトのホスティング"
+                    ],
+                    correct: 1,
+                    explanation: "Azure Bot ServiceはチャットボットやAIアシスタントを作成するためのサービスです。"
+                },
+                {
+                    question: "QnA Makerの主な機能は何ですか？",
+                    options: [
+                        "画像からの質問応答",
+                        "FAQベースの質問応答ボット作成",
+                        "音声認識",
+                        "翻訳サービス"
+                    ],
+                    correct: 1,
+                    explanation: "QnA MakerはFAQやドキュメントから質問応答ボットを簡単に作成できるサービスです。"
+                }
+            ],
+            '責任あるAI': [
+                {
+                    question: "Microsoftの責任あるAIの原則に含まれないものはどれですか？",
+                    options: [
+                        "公平性",
+                        "透明性",
+                        "利益最大化",
+                        "プライバシーとセキュリティ"
+                    ],
+                    correct: 2,
+                    explanation: "Microsoftの責任あるAIの原則は、公平性、信頼性と安全性、プライバシーとセキュリティ、包括性、透明性、説明責任です。"
+                },
+                {
+                    question: "AIシステムのバイアスを減らすために重要なことは何ですか？",
+                    options: [
+                        "最新のアルゴリズムを使用する",
+                        "多様で代表的なデータセットを使用する",
+                        "処理速度を向上させる",
+                        "コストを削減する"
+                    ],
+                    correct: 1,
+                    explanation: "多様で代表的なデータセットを使用することで、AIシステムのバイアスを減らすことができます。"
+                }
+            ],
+            'Azure AI Services': [
+                {
+                    question: "Azure Cognitive Servicesに含まれないサービスはどれですか？",
+                    options: [
+                        "Computer Vision",
+                        "Text Analytics",
+                        "Azure Storage",
+                        "Speech Services"
+                    ],
+                    correct: 2,
+                    explanation: "Azure StorageはストレージサービスでありCognitive Servicesには含まれません。"
+                },
+                {
+                    question: "Azure Machine Learning Studioの主な用途は何ですか？",
+                    options: [
+                        "Webサイトの作成",
+                        "機械学習モデルの構築とデプロイ",
+                        "データベース管理",
+                        "ネットワーク設定"
+                    ],
+                    correct: 1,
+                    explanation: "Azure Machine Learning Studioは、機械学習モデルの構築、トレーニング、デプロイを行うための統合開発環境です。"
+                }
+            ]
+        };
+
+        // タブ切り替え
+        function switchTab(tab) {
+            currentTab = tab;
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'study') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('studySection').classList.remove('hidden');
+                document.getElementById('quizSection').classList.add('hidden');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('studySection').classList.add('hidden');
+                document.getElementById('quizSection').classList.remove('hidden');
+                updateQuizStats();
+            }
+        }
+
+        // エビングハウスの忘却曲線の計算
+        function calculateRetention(elapsedMinutes, initialUnderstanding) {
+            const S = 1440 * initialUnderstanding;
+            const retention = Math.exp(-elapsedMinutes / S) * initialUnderstanding * 100;
+            return Math.max(0, Math.min(100, retention));
+        }
+
+        // 総合記憶レベルの計算
+        function calculateOverallMemoryLevel() {
+            if (studyRecords.length === 0) return 0;
+
+            let totalRetention = 0;
+            const now = new Date();
+
+            studyRecords.forEach(record => {
+                const elapsedMinutes = (now - new Date(record.date)) / (1000 * 60);
+                const retention = calculateRetention(elapsedMinutes, record.difficulty);
+                totalRetention += retention;
+            });
+
+            return Math.round(totalRetention / studyRecords.length);
+        }
+
+        // 記憶レベルの表示を更新
+        function updateMemoryLevel() {
+            const level = calculateOverallMemoryLevel();
+            const levelDisplay = document.getElementById('memoryLevel');
+            levelDisplay.textContent = level;
+            
+            if (level >= 80) {
+                levelDisplay.style.color = '#28a745';
+            } else if (level >= 60) {
+                levelDisplay.style.color = '#0078d4';
+            } else if (level >= 40) {
+                levelDisplay.style.color = '#ffc107';
+            } else {
+                levelDisplay.style.color = '#dc3545';
+            }
+        }
+
+        // グラフの描画
+        function drawChart() {
+            const ctx = document.getElementById('forgettingCurveChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            const labels = [];
+            const datasets = [];
+            const now = new Date();
+
+            for (let i = 0; i <= 168; i += 24) {
+                labels.push(`${i / 24}日後`);
+            }
+
+            // カテゴリー別の色
+            const categoryColors = {
+                'AI概要': '#FF6384',
+                '機械学習': '#36A2EB',
+                'Computer Vision': '#FFCE56',
+                'NLP': '#4BC0C0',
+                '会話型AI': '#9966FF',
+                '責任あるAI': '#FF9F40',
+                'Azure AI Services': '#FF6384'
+            };
+
+            studyRecords.forEach((record, index) => {
+                const data = [];
+                const recordDate = new Date(record.date);
+                
+                for (let i = 0; i <= 168; i += 24) {
+                    const futureDate = new Date(now.getTime() + i * 60 * 60 * 1000);
+                    const elapsedMinutes = (futureDate - recordDate) / (1000 * 60);
+                    const retention = calculateRetention(elapsedMinutes, record.difficulty);
+                    data.push(retention);
+                }
+
+                datasets.push({
+                    label: `${record.category} - ${record.topic}`,
+                    data: data,
+                    borderColor: categoryColors[record.category] || `hsl(${index * 60}, 70%, 50%)`,
+                    backgroundColor: `rgba(0, 120, 212, 0.1)`,
+                    tension: 0.4,
+                    borderWidth: 2
+                });
+            });
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'AI-900 記憶保持率の推移予測',
+                            font: {
+                                size: 18
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: '記憶保持率'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '経過時間'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 学習履歴の表示を更新
+        function updateStudyList() {
+            const studyList = document.getElementById('studyList');
+            
+            if (studyRecords.length === 0) {
+                studyList.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 11H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-3"></path>
+                            <rect x="8" y="2" width="8" height="11" rx="1"></rect>
+                        </svg>
+                        <p>まだ学習記録がありません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            studyList.innerHTML = '';
+            const now = new Date();
+
+            studyRecords.forEach((record, index) => {
+                const elapsedMinutes = (now - new Date(record.date)) / (1000 * 60);
+                const retention = calculateRetention(elapsedMinutes, record.difficulty);
+                
+                const studyItem = document.createElement('div');
+                studyItem.className = 'study-item';
+                studyItem.innerHTML = `
+                    <div class="study-item-header">
+                        <div>
+                            <span class="category-tag">${record.category}</span>
+                            <div class="study-item-title">${record.topic}</div>
+                            <div class="study-item-date">${new Date(record.date).toLocaleString('ja-JP')}</div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteRecord(${index})">削除</button>
+                    </div>
+                    <div class="study-item-retention">現在の記憶保持率: ${Math.round(retention)}%</div>
+                    <div style="font-size: 0.85em; color: #666; margin-top: 10px;">${record.details}</div>
+                    ${record.question ? `
+                        <div style="margin-top: 15px; padding: 15px; background: #f0f4ff; border-radius: 8px;">
+                            <div style="font-weight: 600; color: #0078d4; margin-bottom: 8px;">問題:</div>
+                            <div style="color: #555; margin-bottom: 10px;">${record.question}</div>
+                            <div style="font-weight: 600; color: #0078d4; margin-bottom: 8px;">答え:</div>
+                            <div style="color: #555;">${record.answer}</div>
+                        </div>
+                    ` : ''}
+                `;
+                
+                studyList.appendChild(studyItem);
+            });
+        }
+
+        // 記録の削除
+        function deleteRecord(index) {
+            if (confirm('この学習記録を削除してもよろしいですか？')) {
+                studyRecords.splice(index, 1);
+                updateMemoryLevel();
+                updateStudyList();
+                drawChart();
+            }
+        }
+
+        // クイズ生成
+        function generateQuiz() {
+            const category = document.getElementById('quizCategory').value;
+            const quizContent = document.getElementById('quizContent');
+            
+            let availableQuestions = [];
+            
+            if (category === 'all') {
+                // すべてのカテゴリーから問題を集める
+                Object.values(quizPool).forEach(questions => {
+                    availableQuestions = availableQuestions.concat(questions);
+                });
+            } else {
+                availableQuestions = quizPool[category] || [];
+            }
+            
+            if (availableQuestions.length === 0) {
+                quizContent.innerHTML = '<p>選択されたカテゴリーに問題がありません。</p>';
+                return;
+            }
+            
+            // ランダムに問題を選択
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            const question = availableQuestions[randomIndex];
+            
+            quizContent.innerHTML = `
+                <div class="quiz-question">
+                    <h3>問題 ${quizStats.today + 1}</h3>
+                    <p style="font-size: 1.1em; margin-bottom: 20px;">${question.question}</p>
+                    <div class="quiz-options">
+                        ${question.options.map((option, index) => `
+                            <div class="quiz-option" onclick="selectAnswer(${index}, ${question.correct}, '${question.explanation}')">
+                                ${String.fromCharCode(65 + index)}. ${option}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div id="quizFeedback"></div>
+                </div>
+            `;
+            
+            // 統計を更新
+            quizStats.today++;
+            updateQuizStats();
+        }
+
+        // 答えを選択
+        function selectAnswer(selected, correct, explanation) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quizFeedback');
+            
+            // すでに回答済みの場合は何もしない
+            if (options[0].classList.contains('correct') || options[0].classList.contains('incorrect')) {
+                return;
+            }
+            
+            options.forEach((option, index) => {
+                option.classList.remove('selected');
+                if (index === selected) {
+                    option.classList.add('selected');
+                }
+                if (index === correct) {
+                    option.classList.add('correct');
+                } else if (index === selected && index !== correct) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            quizStats.total++;
+            
+            if (selected === correct) {
+                quizStats.correct++;
+                quizStats.streak++;
+                feedback.innerHTML = `
+                    <div class="quiz-feedback correct">
+                        正解です！ ${explanation}
+                    </div>
+                    <button class="btn btn-success" onclick="generateQuiz()" style="margin-top: 20px;">次の問題へ</button>
+                `;
+            } else {
+                quizStats.streak = 0;
+                feedback.innerHTML = `
+                    <div class="quiz-feedback incorrect">
+                        不正解です。正解は ${String.fromCharCode(65 + correct)} です。
+                        <br><br>${explanation}
+                    </div>
+                    <button class="btn btn-danger" onclick="generateQuiz()" style="margin-top: 20px;">次の問題へ</button>
+                `;
+            }
+            
+            updateQuizStats();
+        }
+
+        // クイズ統計を更新
+        function updateQuizStats() {
+            document.getElementById('todayQuestions').textContent = quizStats.today;
+            document.getElementById('correctRate').textContent = quizStats.total > 0 
+                ? Math.round((quizStats.correct / quizStats.total) * 100) + '%' 
+                : '0%';
+            document.getElementById('streak').textContent = quizStats.streak;
+        }
+
+        // フォームの処理
+        document.getElementById('studyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            console.log('学習内容を記録中...');
+            
+            const record = {
+                category: document.getElementById('category').value,
+                topic: document.getElementById('topic').value,
+                details: document.getElementById('details').value,
+                question: document.getElementById('question').value,
+                answer: document.getElementById('answer').value,
+                difficulty: parseFloat(document.getElementById('difficulty').value),
+                date: new Date().toISOString()
+            };
+
+            console.log('記録データ:', record);
+
+            // 同じトピックの既存記録を探す
+            const existingIndex = studyRecords.findIndex(r => 
+                r.category === record.category && r.topic === record.topic
+            );
+
+            if (existingIndex !== -1) {
+                // 既存の記録を更新（復習として扱う）
+                studyRecords[existingIndex] = record;
+                console.log('既存の記録を更新しました');
+            } else {
+                // 新規記録として追加
+                studyRecords.push(record);
+                console.log('新規記録を追加しました');
+            }
+
+            // UIを更新
+            updateMemoryLevel();
+            updateStudyList();
+            drawChart();
+
+            // フォームをリセット
+            this.reset();
+            
+            // 成功メッセージ
+            const btn = this.querySelector('.btn');
+            const originalText = btn.textContent;
+            btn.textContent = '✓ 記録しました！';
+            btn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)';
+            }, 2000);
+        });
+
+        // 定期的に記憶レベルを更新（1分ごと）
+        setInterval(() => {
+            if (studyRecords.length > 0) {
+                updateMemoryLevel();
+                updateStudyList();
+            }
+        }, 60000);
+    </script>
+</body>
+</html>
