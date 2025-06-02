@@ -1,0 +1,170 @@
+{
+    "AI概要": [
+        {
+            "question": "人工知能（AI）の定義として最も適切なものはどれですか？",
+            "options": [
+                "人間のように考えるコンピューター",
+                "人間の知的活動をコンピューターで実現する技術",
+                "自動的にプログラムを作成するシステム",
+                "インターネット上の情報を収集するシステム"
+            ],
+            "correct": 1,
+            "explanation": "AIは人間の知的活動（学習、推論、認識など）をコンピューターで実現する技術です。"
+        },
+        {
+            "question": "機械学習とAIの関係について正しいものはどれですか？",
+            "options": [
+                "機械学習とAIは同じもの",
+                "機械学習はAIの一部分",
+                "AIは機械学習の一部分",
+                "機械学習とAIは全く別のもの"
+            ],
+            "correct": 1,
+            "explanation": "機械学習はAIの一分野であり、データから学習して予測や分類を行う技術です。"
+        }
+    ],
+    "機械学習": [
+        {
+            "question": "教師あり学習の例として適切なものはどれですか？",
+            "options": [
+                "顧客をグループに分ける",
+                "メールのスパム分類",
+                "商品の推薦システム",
+                "異常値の検出"
+            ],
+            "correct": 1,
+            "explanation": "スパム分類は、ラベル付きデータ（スパム/非スパム）を使って学習する教師あり学習の典型例です。"
+        },
+        {
+            "question": "回帰問題の例として適切なものはどれですか？",
+            "options": [
+                "画像の犬猫分類",
+                "住宅価格の予測",
+                "顧客のクラスタリング",
+                "異常取引の検出"
+            ],
+            "correct": 1,
+            "explanation": "住宅価格の予測は連続値を予測する回帰問題です。"
+        }
+    ],
+    "Computer Vision": [
+        {
+            "question": "Azure Computer Visionで実行できないタスクはどれですか？",
+            "options": [
+                "画像内のテキスト抽出（OCR）",
+                "物体の検出と分類",
+                "音声の文字起こし",
+                "画像のタグ付け"
+            ],
+            "correct": 2,
+            "explanation": "音声の文字起こしはComputer Visionではなく、Speech Servicesの機能です。"
+        },
+        {
+            "question": "OCR（光学文字認識）の主な用途は何ですか？",
+            "options": [
+                "音声をテキストに変換",
+                "画像からテキストを抽出",
+                "テキストを音声に変換",
+                "テキストを翻訳"
+            ],
+            "correct": 1,
+            "explanation": "OCRは画像や文書からテキストを抽出する技術です。"
+        }
+    ],
+    "NLP": [
+        {
+            "question": "自然言語処理（NLP）のタスクでないものはどれですか？",
+            "options": [
+                "感情分析",
+                "キーフレーズ抽出",
+                "顔認識",
+                "言語検出"
+            ],
+            "correct": 2,
+            "explanation": "顔認識はComputer Visionのタスクであり、NLPではありません。"
+        },
+        {
+            "question": "Azure Text Analyticsで実行できるタスクはどれですか？",
+            "options": [
+                "画像分析",
+                "感情分析",
+                "音声認識",
+                "動画処理"
+            ],
+            "correct": 1,
+            "explanation": "Text Analyticsは感情分析、キーフレーズ抽出、言語検出などのテキスト分析を行います。"
+        }
+    ],
+    "会話型AI": [
+        {
+            "question": "Azure Bot Serviceの主な用途は何ですか？",
+            "options": [
+                "画像認識",
+                "チャットボットの作成",
+                "データ分析",
+                "Webサイトのホスティング"
+            ],
+            "correct": 1,
+            "explanation": "Azure Bot ServiceはチャットボットやAIアシスタントを作成するためのサービスです。"
+        },
+        {
+            "question": "QnA Makerの主な機能は何ですか？",
+            "options": [
+                "画像からの質問応答",
+                "FAQベースの質問応答ボット作成",
+                "音声認識",
+                "翻訳サービス"
+            ],
+            "correct": 1,
+            "explanation": "QnA MakerはFAQやドキュメントから質問応答ボットを簡単に作成できるサービスです。"
+        }
+    ],
+    "責任あるAI": [
+        {
+            "question": "Microsoftの責任あるAIの原則に含まれないものはどれですか？",
+            "options": [
+                "公平性",
+                "透明性",
+                "利益最大化",
+                "プライバシーとセキュリティ"
+            ],
+            "correct": 2,
+            "explanation": "Microsoftの責任あるAIの原則は、公平性、信頼性と安全性、プライバシーとセキュリティ、包括性、透明性、説明責任です。"
+        },
+        {
+            "question": "AIシステムのバイアスを減らすために重要なことは何ですか？",
+            "options": [
+                "最新のアルゴリズムを使用する",
+                "多様で代表的なデータセットを使用する",
+                "処理速度を向上させる",
+                "コストを削減する"
+            ],
+            "correct": 1,
+            "explanation": "多様で代表的なデータセットを使用することで、AIシステムのバイアスを減らすことができます。"
+        }
+    ],
+    "Azure AI Services": [
+        {
+            "question": "Azure Cognitive Servicesに含まれないサービスはどれですか？",
+            "options": [
+                "Computer Vision",
+                "Text Analytics",
+                "Azure Storage",
+                "Speech Services"
+            ],
+            "correct": 2,
+            "explanation": "Azure StorageはストレージサービスでありCognitive Servicesには含まれません。"
+        },
+        {
+            "question": "Azure Machine Learning Studioの主な用途は何ですか？",
+            "options": [
+                "Webサイトの作成",
+                "機械学習モデルの構築とデプロイ",
+                "データベース管理",
+                "ネットワーク設定"
+            ],
+            "correct": 1,
+            "explanation": "Azure Machine Learning Studioは、機械学習モデルの構築、トレーニング、デプロイを行うための統合開発環境です。"
+        }
+    ]
+}

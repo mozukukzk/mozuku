@@ -59,11 +59,30 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative; /* ::before疑似要素のため */
+            overflow: hidden; /* ::before疑似要素のため */
         }
 
+        .tab::before { /* ホバー時の背景変化エフェクト用 */
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: left 0.3s ease;
+            z-index: -1; /* 文字より後ろに */
+        }
+
+        .tab:hover::before {
+            left: 0;
+        }
+        
         .tab.active {
             background: white;
             color: #0078d4;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5); /* アクティブなタブを光らせる */
         }
 
         .tab:hover {
@@ -71,7 +90,7 @@
         }
 
         .tab.active:hover {
-            background: white;
+            background: white; /* アクティブなタブのホバー色は変えない */
         }
 
         .main-content {
@@ -154,16 +173,19 @@
             transition: all 0.3s ease;
             width: 100%;
             margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(0, 120, 212, 0.2); /* 少し影を追加 */
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 120, 212, 0.3);
+            transform: translateY(-3px); /* 少し上に移動 */
+            box-shadow: 0 8px 25px rgba(0, 120, 212, 0.3); /* 影を強調 */
         }
 
         .btn:active {
-            transform: translateY(0);
+            transform: translateY(-1px); /* クリック時に少し沈む */
+            box-shadow: 0 4px 15px rgba(0, 120, 212, 0.2); /* 影を元に戻すか少し弱める */
         }
+
 
         .btn-secondary {
             background: linear-gradient(135deg, #40e0d0 0%, #20b2aa 100%);
@@ -218,11 +240,13 @@
             cursor: pointer;
             max-height: 500px;
             overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* わずかな影を初期状態に追加 */
         }
 
         .study-item:hover {
             background: #e9ecef;
-            transform: translateX(5px);
+            transform: translateX(5px) scale(1.02); /* 少し右に移動し、わずかに拡大 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* 影を少し強調 */
         }
 
         .study-item-header {
@@ -413,6 +437,22 @@
         .hidden {
             display: none;
         }
+
+        @keyframes fadeInAndSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .study-item-appear {
+            animation: fadeInAndSlideDown 0.5s ease-out forwards;
+        }
+
     </style>
 </head>
 <body>
@@ -539,8 +579,7 @@
                     <button class="btn btn-secondary" onclick="generateQuiz()">問題を生成</button>
 
                     <div id="quizContent" style="margin-top: 30px;">
-                        <!-- 問題がここに表示されます -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -565,186 +604,60 @@
         // 現在のタブ
         let currentTab = 'study';
 
+        // グローバルスコープで quizPool を宣言 (初期値は空のオブジェクト)
+        let quizPool = {}; // ★修正: const から let に変更し、空のオブジェクトで初期化
+
         // ページ読み込み時の処理
-        window.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('DOMContentLoaded', async function() { // ★修正: async function に変更
             // 初期化処理
             console.log('アプリケーションを初期化しています...');
+
+            // ★追加: quiz_questions.json を読み込む処理
+            try {
+                const response = await fetch('quiz_questions.json'); // JSONファイルを読み込む
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                quizPool = await response.json(); // 読み込んだJSONデータをquizPoolに格納
+                console.log('クイズ問題を正常に読み込みました。');
+                // クイズカテゴリの選択肢を動的に生成 (オプション)
+                populateQuizCategories();
+            } catch (error) {
+                console.error('クイズ問題の読み込みに失敗しました:', error);
+                alert('クイズ問題の読み込みに失敗しました。ファイルが存在し、形式が正しいか確認してください。');
+            }
+            // ★ここまで追加
+
             updateMemoryLevel();
-            updateStudyList();
+            updateStudyListAndAnimateNewItem(); 
             drawChart();
         });
 
-        // AI-900 問題プール
-        const quizPool = {
-            'AI概要': [
-                {
-                    question: "人工知能（AI）の定義として最も適切なものはどれですか？",
-                    options: [
-                        "人間のように考えるコンピューター",
-                        "人間の知的活動をコンピューターで実現する技術",
-                        "自動的にプログラムを作成するシステム",
-                        "インターネット上の情報を収集するシステム"
-                    ],
-                    correct: 1,
-                    explanation: "AIは人間の知的活動（学習、推論、認識など）をコンピューターで実現する技術です。"
-                },
-                {
-                    question: "機械学習とAIの関係について正しいものはどれですか？",
-                    options: [
-                        "機械学習とAIは同じもの",
-                        "機械学習はAIの一部分",
-                        "AIは機械学習の一部分",
-                        "機械学習とAIは全く別のもの"
-                    ],
-                    correct: 1,
-                    explanation: "機械学習はAIの一分野であり、データから学習して予測や分類を行う技術です。"
-                }
-            ],
-            '機械学習': [
-                {
-                    question: "教師あり学習の例として適切なものはどれですか？",
-                    options: [
-                        "顧客をグループに分ける",
-                        "メールのスパム分類",
-                        "商品の推薦システム",
-                        "異常値の検出"
-                    ],
-                    correct: 1,
-                    explanation: "スパム分類は、ラベル付きデータ（スパム/非スパム）を使って学習する教師あり学習の典型例です。"
-                },
-                {
-                    question: "回帰問題の例として適切なものはどれですか？",
-                    options: [
-                        "画像の犬猫分類",
-                        "住宅価格の予測",
-                        "顧客のクラスタリング",
-                        "異常取引の検出"
-                    ],
-                    correct: 1,
-                    explanation: "住宅価格の予測は連続値を予測する回帰問題です。"
-                }
-            ],
-            'Computer Vision': [
-                {
-                    question: "Azure Computer Visionで実行できないタスクはどれですか？",
-                    options: [
-                        "画像内のテキスト抽出（OCR）",
-                        "物体の検出と分類",
-                        "音声の文字起こし",
-                        "画像のタグ付け"
-                    ],
-                    correct: 2,
-                    explanation: "音声の文字起こしはComputer Visionではなく、Speech Servicesの機能です。"
-                },
-                {
-                    question: "OCR（光学文字認識）の主な用途は何ですか？",
-                    options: [
-                        "音声をテキストに変換",
-                        "画像からテキストを抽出",
-                        "テキストを音声に変換",
-                        "テキストを翻訳"
-                    ],
-                    correct: 1,
-                    explanation: "OCRは画像や文書からテキストを抽出する技術です。"
-                }
-            ],
-            'NLP': [
-                {
-                    question: "自然言語処理（NLP）のタスクでないものはどれですか？",
-                    options: [
-                        "感情分析",
-                        "キーフレーズ抽出",
-                        "顔認識",
-                        "言語検出"
-                    ],
-                    correct: 2,
-                    explanation: "顔認識はComputer Visionのタスクであり、NLPではありません。"
-                },
-                {
-                    question: "Azure Text Analyticsで実行できるタスクはどれですか？",
-                    options: [
-                        "画像分析",
-                        "感情分析",
-                        "音声認識",
-                        "動画処理"
-                    ],
-                    correct: 1,
-                    explanation: "Text Analyticsは感情分析、キーフレーズ抽出、言語検出などのテキスト分析を行います。"
-                }
-            ],
-            '会話型AI': [
-                {
-                    question: "Azure Bot Serviceの主な用途は何ですか？",
-                    options: [
-                        "画像認識",
-                        "チャットボットの作成",
-                        "データ分析",
-                        "Webサイトのホスティング"
-                    ],
-                    correct: 1,
-                    explanation: "Azure Bot ServiceはチャットボットやAIアシスタントを作成するためのサービスです。"
-                },
-                {
-                    question: "QnA Makerの主な機能は何ですか？",
-                    options: [
-                        "画像からの質問応答",
-                        "FAQベースの質問応答ボット作成",
-                        "音声認識",
-                        "翻訳サービス"
-                    ],
-                    correct: 1,
-                    explanation: "QnA MakerはFAQやドキュメントから質問応答ボットを簡単に作成できるサービスです。"
-                }
-            ],
-            '責任あるAI': [
-                {
-                    question: "Microsoftの責任あるAIの原則に含まれないものはどれですか？",
-                    options: [
-                        "公平性",
-                        "透明性",
-                        "利益最大化",
-                        "プライバシーとセキュリティ"
-                    ],
-                    correct: 2,
-                    explanation: "Microsoftの責任あるAIの原則は、公平性、信頼性と安全性、プライバシーとセキュリティ、包括性、透明性、説明責任です。"
-                },
-                {
-                    question: "AIシステムのバイアスを減らすために重要なことは何ですか？",
-                    options: [
-                        "最新のアルゴリズムを使用する",
-                        "多様で代表的なデータセットを使用する",
-                        "処理速度を向上させる",
-                        "コストを削減する"
-                    ],
-                    correct: 1,
-                    explanation: "多様で代表的なデータセットを使用することで、AIシステムのバイアスを減らすことができます。"
-                }
-            ],
-            'Azure AI Services': [
-                {
-                    question: "Azure Cognitive Servicesに含まれないサービスはどれですか？",
-                    options: [
-                        "Computer Vision",
-                        "Text Analytics",
-                        "Azure Storage",
-                        "Speech Services"
-                    ],
-                    correct: 2,
-                    explanation: "Azure StorageはストレージサービスでありCognitive Servicesには含まれません。"
-                },
-                {
-                    question: "Azure Machine Learning Studioの主な用途は何ですか？",
-                    options: [
-                        "Webサイトの作成",
-                        "機械学習モデルの構築とデプロイ",
-                        "データベース管理",
-                        "ネットワーク設定"
-                    ],
-                    correct: 1,
-                    explanation: "Azure Machine Learning Studioは、機械学習モデルの構築、トレーニング、デプロイを行うための統合開発環境です。"
-                }
-            ]
-        };
+        // ★追加: クイズカテゴリのプルダウンメニューを動的に生成する関数
+        function populateQuizCategories() {
+            const quizCategorySelect = document.getElementById('quizCategory');
+            if (!quizCategorySelect) return;
+
+            // 既存のオプションをクリア（「すべてのカテゴリー」を除くか、それも動的に生成）
+            // 現在はHTMLに「すべてのカテゴリー」がハードコーディングされているので、
+            // それ以降に読み込んだカテゴリを追加します。
+            // もし「すべてのカテゴリー」も動的にしたい場合は、quizCategorySelect.innerHTML = ''; から始めます。
+            
+            // HTMLにすでにある選択肢はそのままに、JSONから読み込んだカテゴリを追加
+            const existingOptions = Array.from(quizCategorySelect.options).map(opt => opt.value);
+
+            if (quizPool && typeof quizPool === 'object') {
+                Object.keys(quizPool).forEach(categoryName => {
+                    if (!existingOptions.includes(categoryName)) { // 重複を避ける
+                        const option = document.createElement('option');
+                        option.value = categoryName;
+                        option.textContent = categoryName;
+                        quizCategorySelect.appendChild(option);
+                    }
+                });
+            }
+        }
+
 
         // タブ切り替え
         function switchTab(tab) {
@@ -766,9 +679,14 @@
 
         // エビングハウスの忘却曲線の計算
         function calculateRetention(elapsedMinutes, initialUnderstanding) {
-            const S = 1440 * initialUnderstanding;
+            const S = 1440 * initialUnderstanding; // Sは強さ(Strength of memory), 分単位
+            // エビングハウスの忘却曲線 R = e^(-t/S)
+            // ここでは R が 0-1 の範囲になるように調整し、initialUnderstanding を初期の記憶レベルとする
+            // R = initialUnderstanding * e^(-t/S)
+            // S (記憶強度)は初回の学習では、initialUnderstanding に比例すると仮定
+            // より正確には、Sは復習回数などにも依存するが、ここでは簡略化
             const retention = Math.exp(-elapsedMinutes / S) * initialUnderstanding * 100;
-            return Math.max(0, Math.min(100, retention));
+            return Math.max(0, Math.min(100, retention)); // 0-100% の範囲に収める
         }
 
         // 総合記憶レベルの計算
@@ -793,6 +711,7 @@
             const levelDisplay = document.getElementById('memoryLevel');
             levelDisplay.textContent = level;
             
+            // 色の変更は既存のロジック通り
             if (level >= 80) {
                 levelDisplay.style.color = '#28a745';
             } else if (level >= 60) {
@@ -816,11 +735,11 @@
             const datasets = [];
             const now = new Date();
 
-            for (let i = 0; i <= 168; i += 24) {
-                labels.push(`${i / 24}日後`);
+            // グラフのX軸ラベル (例: 0日後, 1日後, ..., 7日後)
+            for (let i = 0; i <= 7; i++) { // 7日間をプロット
+                labels.push(`${i}日後`);
             }
 
-            // カテゴリー別の色
             const categoryColors = {
                 'AI概要': '#FF6384',
                 '機械学習': '#36A2EB',
@@ -828,27 +747,32 @@
                 'NLP': '#4BC0C0',
                 '会話型AI': '#9966FF',
                 '責任あるAI': '#FF9F40',
-                'Azure AI Services': '#FF6384'
+                'Azure AI Services': '#FFCD56' // 色を少し変更
             };
 
             studyRecords.forEach((record, index) => {
                 const data = [];
                 const recordDate = new Date(record.date);
                 
-                for (let i = 0; i <= 168; i += 24) {
-                    const futureDate = new Date(now.getTime() + i * 60 * 60 * 1000);
-                    const elapsedMinutes = (futureDate - recordDate) / (1000 * 60);
-                    const retention = calculateRetention(elapsedMinutes, record.difficulty);
+                for (let i = 0; i <= 7; i++) { // 7日間のデータを計算
+                    // i日後の経過時間(分)を計算
+                    // record.date から i 日後の時間を計算し、その時間と record.date との差分ではない。
+                    // record.date から「現在＋i日」までの経過時間で計算すべき
+                    // いや、グラフは「学習した瞬間(record.date)から見て、i日後の保持率」を示すべき
+                    const elapsedMinutesForPlot = i * 24 * 60;
+                    const retention = calculateRetention(elapsedMinutesForPlot, record.difficulty);
                     data.push(retention);
                 }
 
                 datasets.push({
-                    label: `${record.category} - ${record.topic}`,
+                    label: `${record.category} - ${record.topic.substring(0, 20)}${record.topic.length > 20 ? '...' : ''}`, // ラベルが長すぎないように調整
                     data: data,
-                    borderColor: categoryColors[record.category] || `hsl(${index * 60}, 70%, 50%)`,
-                    backgroundColor: `rgba(0, 120, 212, 0.1)`,
-                    tension: 0.4,
-                    borderWidth: 2
+                    borderColor: categoryColors[record.category] || `hsl(${index * 40 % 360}, 70%, 60%)`,
+                    backgroundColor: `hsla(${index * 40 % 360}, 70%, 60%, 0.1)`,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5
                 });
             });
 
@@ -864,98 +788,63 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'AI-900 記憶保持率の推移予測',
-                            font: {
-                                size: 18
-                            }
+                            text: 'AI-900 各トピックの記憶保持率予測 (学習日から起算)',
+                            font: { size: 16, weight: 'bold' },
+                            padding: { top: 10, bottom: 20 }
                         },
                         legend: {
-                            display: true,
-                            position: 'bottom'
+                            display: datasets.length > 0 && datasets.length < 10, // あまりに多いと凡例が邪魔になるので制限
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 12 },
+                                boxWidth: 20,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += Math.round(context.parsed.y * 10) / 10 + '%';
+                                    }
+                                    return label;
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: 100,
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: '記憶保持率'
-                            }
+                            title: { display: true, text: '記憶保持率 (%)', font: { size: 14 } },
+                            ticks: { stepSize: 10 }
                         },
                         x: {
-                            title: {
-                                display: true,
-                                text: '経過時間'
-                            }
+                            title: { display: true, text: '学習日からの経過日数', font: { size: 14 } }
                         }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
         }
 
-        // 学習履歴の表示を更新
-        function updateStudyList() {
-            const studyList = document.getElementById('studyList');
-            
-            if (studyRecords.length === 0) {
-                studyList.innerHTML = `
-                    <div class="empty-state">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 11H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-3"></path>
-                            <rect x="8" y="2" width="8" height="11" rx="1"></rect>
-                        </svg>
-                        <p>まだ学習記録がありません</p>
-                    </div>
-                `;
-                return;
-            }
-
-            studyList.innerHTML = '';
-            const now = new Date();
-
-            studyRecords.forEach((record, index) => {
-                const elapsedMinutes = (now - new Date(record.date)) / (1000 * 60);
-                const retention = calculateRetention(elapsedMinutes, record.difficulty);
-                
-                const studyItem = document.createElement('div');
-                studyItem.className = 'study-item';
-                studyItem.innerHTML = `
-                    <div class="study-item-header">
-                        <div>
-                            <span class="category-tag">${record.category}</span>
-                            <div class="study-item-title">${record.topic}</div>
-                            <div class="study-item-date">${new Date(record.date).toLocaleString('ja-JP')}</div>
-                        </div>
-                        <button class="delete-btn" onclick="deleteRecord(${index})">削除</button>
-                    </div>
-                    <div class="study-item-retention">現在の記憶保持率: ${Math.round(retention)}%</div>
-                    <div style="font-size: 0.85em; color: #666; margin-top: 10px;">${record.details}</div>
-                    ${record.question ? `
-                        <div style="margin-top: 15px; padding: 15px; background: #f0f4ff; border-radius: 8px;">
-                            <div style="font-weight: 600; color: #0078d4; margin-bottom: 8px;">問題:</div>
-                            <div style="color: #555; margin-bottom: 10px;">${record.question}</div>
-                            <div style="font-weight: 600; color: #0078d4; margin-bottom: 8px;">答え:</div>
-                            <div style="color: #555;">${record.answer}</div>
-                        </div>
-                    ` : ''}
-                `;
-                
-                studyList.appendChild(studyItem);
-            });
-        }
 
         // 記録の削除
         function deleteRecord(index) {
             if (confirm('この学習記録を削除してもよろしいですか？')) {
                 studyRecords.splice(index, 1);
                 updateMemoryLevel();
-                updateStudyList();
+                updateStudyListAndAnimateNewItem();
                 drawChart();
             }
         }
@@ -965,33 +854,39 @@
             const category = document.getElementById('quizCategory').value;
             const quizContent = document.getElementById('quizContent');
             
-            let availableQuestions = [];
-            
-            if (category === 'all') {
-                // すべてのカテゴリーから問題を集める
-                Object.values(quizPool).forEach(questions => {
-                    availableQuestions = availableQuestions.concat(questions);
-                });
-            } else {
-                availableQuestions = quizPool[category] || [];
-            }
-            
-            if (availableQuestions.length === 0) {
-                quizContent.innerHTML = '<p>選択されたカテゴリーに問題がありません。</p>';
+            // quizPoolが空か、キーを持たないオブジェクトの場合のガード節
+            if (!quizPool || Object.keys(quizPool).length === 0) {
+                quizContent.innerHTML = '<p>問題データが読み込まれていません。しばらく待つか、ページを再読み込みしてください。</p>';
                 return;
             }
             
-            // ランダムに問題を選択
+            let availableQuestions = [];
+            
+            if (category === 'all') {
+                Object.values(quizPool).forEach(questionsInCategory => {
+                    if (Array.isArray(questionsInCategory)) {
+                        availableQuestions = availableQuestions.concat(questionsInCategory);
+                    }
+                });
+            } else if (quizPool[category] && Array.isArray(quizPool[category])) {
+                availableQuestions = quizPool[category];
+            }
+            
+            if (availableQuestions.length === 0) {
+                quizContent.innerHTML = '<p>選択されたカテゴリーに問題がありません。他のカテゴリーを選択するか、問題データを追加してください。</p>';
+                return;
+            }
+            
             const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-            const question = availableQuestions[randomIndex];
+            const questionData = availableQuestions[randomIndex]; // question だと変数名が被るので変更
             
             quizContent.innerHTML = `
                 <div class="quiz-question">
                     <h3>問題 ${quizStats.today + 1}</h3>
-                    <p style="font-size: 1.1em; margin-bottom: 20px;">${question.question}</p>
+                    <p style="font-size: 1.1em; margin-bottom: 20px;">${questionData.question}</p>
                     <div class="quiz-options">
-                        ${question.options.map((option, index) => `
-                            <div class="quiz-option" onclick="selectAnswer(${index}, ${question.correct}, '${question.explanation}')">
+                        ${questionData.options.map((option, index) => `
+                            <div class="quiz-option" onclick="selectAnswer(${index}, ${questionData.correct}, '${String(questionData.explanation || '').replace(/'/g, "\\'")}')">
                                 ${String.fromCharCode(65 + index)}. ${option}
                             </div>
                         `).join('')}
@@ -1000,29 +895,36 @@
                 </div>
             `;
             
-            // 統計を更新
-            quizStats.today++;
+            quizStats.today++; // 問題を生成したらカウント
             updateQuizStats();
         }
+
 
         // 答えを選択
         function selectAnswer(selected, correct, explanation) {
             const options = document.querySelectorAll('.quiz-option');
             const feedback = document.getElementById('quizFeedback');
             
-            // すでに回答済みの場合は何もしない
-            if (options[0].classList.contains('correct') || options[0].classList.contains('incorrect')) {
-                return;
+            // すでに回答済みの場合は何もしない (クラスで判定)
+            if (options.length > 0 && (options[0].classList.contains('correct') || options[0].classList.contains('incorrect'))) {
+                // quiz-option が存在しない場合のエラーを避ける
+                if (Array.from(options).some(opt => opt.classList.contains('correct') || opt.classList.contains('incorrect'))) {
+                   return;
+                }
             }
             
             options.forEach((option, index) => {
-                option.classList.remove('selected');
+                option.classList.remove('selected'); // 一旦リセット
+                option.style.pointerEvents = 'none'; // 回答後は選択不可に
                 if (index === selected) {
                     option.classList.add('selected');
                 }
+                // 正解の選択肢をハイライト
                 if (index === correct) {
                     option.classList.add('correct');
-                } else if (index === selected && index !== correct) {
+                } 
+                // 選択したものが不正解の場合、選択したものも不正解としてマーク
+                else if (index === selected && index !== correct) {
                     option.classList.add('incorrect');
                 }
             });
@@ -1034,7 +936,7 @@
                 quizStats.streak++;
                 feedback.innerHTML = `
                     <div class="quiz-feedback correct">
-                        正解です！ ${explanation}
+                        <strong>正解です！</strong><br>${explanation}
                     </div>
                     <button class="btn btn-success" onclick="generateQuiz()" style="margin-top: 20px;">次の問題へ</button>
                 `;
@@ -1042,8 +944,8 @@
                 quizStats.streak = 0;
                 feedback.innerHTML = `
                     <div class="quiz-feedback incorrect">
-                        不正解です。正解は ${String.fromCharCode(65 + correct)} です。
-                        <br><br>${explanation}
+                        <strong>不正解です。</strong>正解は ${String.fromCharCode(65 + correct)} です。<br><br>
+                        ${explanation}
                     </div>
                     <button class="btn btn-danger" onclick="generateQuiz()" style="margin-top: 20px;">次の問題へ</button>
                 `;
@@ -1060,49 +962,44 @@
                 : '0%';
             document.getElementById('streak').textContent = quizStats.streak;
         }
-
+        
         // フォームの処理
         document.getElementById('studyForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             console.log('学習内容を記録中...');
             
-            const record = {
+            const newRecord = {
                 category: document.getElementById('category').value,
                 topic: document.getElementById('topic').value,
                 details: document.getElementById('details').value,
                 question: document.getElementById('question').value,
                 answer: document.getElementById('answer').value,
                 difficulty: parseFloat(document.getElementById('difficulty').value),
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                isNew: true 
             };
 
-            console.log('記録データ:', record);
+            console.log('記録データ:', newRecord);
 
-            // 同じトピックの既存記録を探す
             const existingIndex = studyRecords.findIndex(r => 
-                r.category === record.category && r.topic === record.topic
+                r.category === newRecord.category && r.topic === newRecord.topic
             );
 
             if (existingIndex !== -1) {
-                // 既存の記録を更新（復習として扱う）
-                studyRecords[existingIndex] = record;
+                studyRecords[existingIndex] = newRecord;
                 console.log('既存の記録を更新しました');
             } else {
-                // 新規記録として追加
-                studyRecords.push(record);
+                studyRecords.push(newRecord);
                 console.log('新規記録を追加しました');
             }
 
-            // UIを更新
             updateMemoryLevel();
-            updateStudyList();
+            updateStudyListAndAnimateNewItem(); 
             drawChart();
 
-            // フォームをリセット
             this.reset();
             
-            // 成功メッセージ
             const btn = this.querySelector('.btn');
             const originalText = btn.textContent;
             btn.textContent = '✓ 記録しました！';
@@ -1114,13 +1011,87 @@
             }, 2000);
         });
 
+        // 新しい関数: リストを更新し、新しいアイテムにアニメーションを適用
+        function updateStudyListAndAnimateNewItem() {
+            const studyList = document.getElementById('studyList');
+            
+            if (studyRecords.length === 0) {
+                studyList.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 11H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-3"></path>
+                            <rect x="8" y="2" width="8" height="11" rx="1"></rect>
+                        </svg>
+                        <p>まだ学習記録がありません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            studyList.innerHTML = ''; 
+            const now = new Date();
+            let newElement = null; 
+
+            studyRecords.sort((a, b) => new Date(b.date) - new Date(a.date)); // 日付の新しい順にソート
+
+            studyRecords.forEach((record, index) => {
+                // index はソート後のものなので、元の studyRecords のインデックスとは異なる点に注意
+                // deleteRecord で使うインデックスは元の studyRecords のものを使う必要があるため、
+                // record オブジェクト自体にユニークIDを持たせるか、
+                // deleteRecord に渡す識別子を工夫する必要が出てくる
+                // 今回はシンプルに index をそのまま使うが、削除時の挙動に注意
+                const originalIndex = studyRecords.indexOf(record); // ソート前のインデックスを保持 (あまり効率的ではない)
+                                                                  // より良いのはIDを各レコードに振ること
+
+                const elapsedMinutes = (now - new Date(record.date)) / (1000 * 60);
+                const retention = calculateRetention(elapsedMinutes, record.difficulty);
+                
+                const studyItem = document.createElement('div');
+                studyItem.className = 'study-item';
+
+                studyItem.innerHTML = `
+                    <div class="study-item-header">
+                        <div>
+                            <span class="category-tag">${record.category}</span>
+                            <div class="study-item-title">${record.topic}</div>
+                            <div class="study-item-date">${new Date(record.date).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteRecord(${originalIndex})">削除</button> 
+                    </div>
+                    <div class="study-item-retention">現在の記憶保持率: <strong>${Math.round(retention)}%</strong> (理解度: ${record.difficulty * 100}%)</div>
+                    <div style="font-size: 0.85em; color: #555; margin-top: 10px; white-space: pre-wrap; word-wrap: break-word;">${record.details}</div>
+                    ${record.question ? `
+                        <div style="margin-top: 15px; padding: 15px; background: #f0f4ff; border-radius: 8px;">
+                            <details>
+                                <summary style="font-weight: 600; color: #0078d4; cursor: pointer;">問題を見る</summary>
+                                <div style="color: #555; margin-top: 8px; white-space: pre-wrap; word-wrap: break-word;"><strong>問題:</strong><br>${record.question}</div>
+                                <div style="color: #555; margin-top: 10px; white-space: pre-wrap; word-wrap: break-word;"><strong>答え:</strong><br>${record.answer}</div>
+                            </details>
+                        </div>
+                    ` : ''}
+                `;
+                
+                studyList.appendChild(studyItem);
+
+                if (record.isNew) {
+                    newElement = studyItem;
+                    delete record.isNew; 
+                }
+            });
+
+            if (newElement) {
+                newElement.classList.add('study-item-appear');
+            }
+        }
+
+
         // 定期的に記憶レベルを更新（1分ごと）
         setInterval(() => {
             if (studyRecords.length > 0) {
                 updateMemoryLevel();
-                updateStudyList();
+                updateStudyListAndAnimateNewItem(); 
             }
-        }, 60000);
+        }, 60000); // 1分 = 60000ミリ秒
     </script>
 </body>
 </html>
