@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゴルフスイング比較アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff; /* Light blue background */
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Max width for video player */
+            margin: 0 auto;
+        }
+        video {
+            width: 100%;
+            border-radius: 0.5rem;
+            background-color: #000;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none; /* Prevent page scroll on canvas touch */
+        }
+        .controls button, .controls input[type="text"], .controls input[type="file"] {
+            transition: all 0.3s ease;
+        }
+        .controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 160px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -80px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Message box styling */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .message-box.error {
+            background-color: #f44336;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-sky-100 to-indigo-200 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="messageBox" class="message-box"></div>
+
+    <div class="w-full max-w-7xl bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-sky-700">ゴルフスイング比較アプリ</h1>
+            <p class="text-gray-600 mt-2">あなたのスイングとプロのスイングを並べて分析しましょう。</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 controls">
+            <div class="bg-sky-50 p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold text-sky-600 mb-3">あなたのスイング (MP4)</h2>
+                <input type="file" id="userVideoFile" accept="video/mp4" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sky-500 file:text-white hover:file:bg-sky-600 cursor-pointer">
+                <p class="text-xs text-gray-500 mt-1">MP4形式の動画ファイルを選択してください。</p>
+            </div>
+            <div class="bg-indigo-50 p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold text-indigo-600 mb-3">プロのスイング (MP4 URL)</h2>
+                <input type="text" id="proVideoUrl" placeholder="プロのMP4動画URLを貼り付け" class="block w-full p-2.5 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+                <p class="text-xs text-gray-500 mt-1">例: https://example.com/pro_swing.mp4</p>
+                 <button id="loadSampleProVideo" class="mt-2 text-sm bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-1.5 px-3 rounded-lg shadow-sm">
+                    <i class="fas fa-video mr-1"></i> サンプル動画を読込
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="video-container border-4 border-sky-300 rounded-lg p-1 bg-sky-100 shadow-inner">
+                <video id="userVideo" controls controlsList="nodownload noremoteplayback"></video>
+                <canvas id="userCanvas"></canvas>
+            </div>
+            <div class="video-container border-4 border-indigo-300 rounded-lg p-1 bg-indigo-100 shadow-inner">
+                <video id="proVideo" controls controlsList="nodownload noremoteplayback"></video>
+                <canvas id="proCanvas"></canvas>
+            </div>
+        </div>
+        
+        <div class="controls bg-gray-100 p-6 rounded-lg shadow-md mb-8">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">共通コントロール</h3>
+            <div class="flex flex-wrap justify-center items-center gap-3 sm:gap-4">
+                <button id="loadVideos" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 px-5 rounded-lg shadow-md tooltip">
+                    <i class="fas fa-upload mr-2"></i>動画を読み込む
+                    <span class="tooltiptext">ファイルとURLを選択・入力してから押してください</span>
+                </button>
+                <button id="playPauseSync" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 px-5 rounded-lg shadow-md tooltip">
+                    <i class="fas fa-play mr-2"></i>再生/一時停止 (同期)
+                    <span class="tooltiptext">両方の動画を同時に再生/一時停止します</span>
+                </button>
+                <button id="syncTimes" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2.5 px-5 rounded-lg shadow-md tooltip">
+                    <i class="fas fa-sync-alt mr-2"></i>再生位置を同期
+                    <span class="tooltiptext">プロ動画をあなたの動画の再生位置に合わせます</span>
+                </button>
+                 <div class="flex items-center space-x-2">
+                    <label for="playbackRate" class="text-sm font-medium text-gray-700">再生速度:</label>
+                    <select id="playbackRate" class="p-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="0.25">0.25x</option>
+                        <option value="0.5">0.5x</option>
+                        <option value="0.75">0.75x</option>
+                        <option value="1" selected>1.0x (通常)</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2">2.0x</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls bg-gray-100 p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">描画ツール (動画一時停止中に使用)</h3>
+            <div class="flex flex-wrap justify-center items-center gap-3 sm:gap-4">
+                <div class="tooltip">
+                    <input type="color" id="lineColor" value="#FF0000" class="w-10 h-10 rounded-full border-2 border-gray-300 cursor-pointer">
+                    <span class="tooltiptext">線の色を選択</span>
+                </div>
+                <div class="tooltip">
+                     <input type="range" id="lineWidth" min="1" max="10" value="2" class="w-24 cursor-pointer align-middle">
+                     <label for="lineWidth" class="text-sm text-gray-600 ml-1 align-middle">線の太さ: <span id="lineWidthValue">2</span>px</label>
+                    <span class="tooltiptext">線の太さを調整</span>
+                </div>
+                <button id="clearUserCanvas" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 px-5 rounded-lg shadow-md tooltip">
+                    <i class="fas fa-trash-alt mr-2"></i>あなたの動画の描画を消去
+                    <span class="tooltiptext">左の動画の線や図形を全て消します</span>
+                </button>
+                <button id="clearProCanvas" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 px-5 rounded-lg shadow-md tooltip">
+                    <i class="fas fa-trash-alt mr-2"></i>プロ動画の描画を消去
+                    <span class="tooltiptext">右の動画の線や図形を全て消します</span>
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-3 text-center">動画を一時停止し、動画上をクリック＆ドラッグして線を描画できます。</p>
+        </div>
+         <footer class="mt-8 text-center text-sm text-gray-500">
+            <p>&copy; 2024 ゴルフスイング比較アプリ. </p>
+            <p class="mt-1">注意: プロ選手の動画URLを使用する際は、著作権にご注意ください。</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const userVideoFile = document.getElementById('userVideoFile');
+        const proVideoUrl = document.getElementById('proVideoUrl');
+        const loadVideosBtn = document.getElementById('loadVideos');
+        const loadSampleProVideoBtn = document.getElementById('loadSampleProVideo');
+        
+        const userVideo = document.getElementById('userVideo');
+        const proVideo = document.getElementById('proVideo');
+        const userCanvas = document.getElementById('userCanvas');
+        const proCanvas = document.getElementById('proCanvas');
+        
+        const playPauseSyncBtn = document.getElementById('playPauseSync');
+        const syncTimesBtn = document.getElementById('syncTimes');
+        const playbackRateSelect = document.getElementById('playbackRate');
+
+        const lineColorInput = document.getElementById('lineColor');
+        const lineWidthInput = document.getElementById('lineWidth');
+        const lineWidthValueSpan = document.getElementById('lineWidthValue');
+        const clearUserCanvasBtn = document.getElementById('clearUserCanvas');
+        const clearProCanvasBtn = document.getElementById('clearProCanvas');
+
+        const messageBox = document.getElementById('messageBox');
+
+        // Canvas contexts
+        const userCtx = userCanvas.getContext('2d');
+        const proCtx = proCanvas.getContext('2d');
+
+        let isUserVideoReady = false;
+        let isProVideoReady = false;
+
+        // --- Message Box ---
+        function showMessage(text, type = 'success', duration = 3000) {
+            messageBox.textContent = text;
+            messageBox.className = 'message-box'; // Reset classes
+            if (type === 'error') {
+                messageBox.classList.add('error');
+            }
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, duration);
+        }
+
+        // --- Video Loading ---
+        loadVideosBtn.addEventListener('click', () => {
+            // Load user video
+            if (userVideoFile.files && userVideoFile.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    userVideo.src = e.target.result;
+                    userVideo.onloadedmetadata = () => {
+                        resizeCanvas(userVideo, userCanvas, userCtx);
+                        isUserVideoReady = true;
+                        checkIfBothVideosReady();
+                        showMessage('あなたの動画が読み込まれました。', 'success');
+                    };
+                    userVideo.onerror = () => {
+                        showMessage('あなたの動画の読み込みに失敗しました。ファイル形式を確認してください。', 'error');
+                        isUserVideoReady = false;
+                    };
+                }
+                reader.readAsDataURL(userVideoFile.files[0]);
+            } else {
+                showMessage('あなたのスイング動画ファイルを選択してください。', 'error');
+            }
+
+            // Load pro video
+            const url = proVideoUrl.value.trim();
+            if (url) {
+                // Basic URL validation (very simple)
+                if (url.startsWith('http://') || url.startsWith('https://')) {
+                     // CORS considerations: For cross-origin videos, the server hosting the video
+                     // must send appropriate CORS headers (Access-Control-Allow-Origin: * or your domain).
+                     // Otherwise, loading or certain operations like canvas interaction might be restricted.
+                    proVideo.src = url;
+                    proVideo.onloadedmetadata = () => {
+                        resizeCanvas(proVideo, proCanvas, proCtx);
+                        isProVideoReady = true;
+                        checkIfBothVideosReady();
+                        showMessage('プロの動画が読み込まれました。', 'success');
+                    };
+                    proVideo.onerror = (e) => {
+                        console.error("Pro video error:", e, proVideo.error);
+                        showMessage('プロの動画の読み込みに失敗しました。URLまたはCORS設定を確認してください。', 'error');
+                        isProVideoReady = false;
+                    };
+                } else {
+                     showMessage('有効なプロの動画URLを入力してください (http:// または https:// で始まる必要があります)。', 'error');
+                }
+            } else {
+                showMessage('プロの動画URLを入力してください。', 'error');
+            }
+        });
+
+        loadSampleProVideoBtn.addEventListener('click', () => {
+            // Using a common sample video that should have CORS headers set correctly for broader access.
+            // Note: These are general sample videos, not specific golf swings.
+            // Replace with actual golf swing MP4 URLs if available and CORS-permissive.
+            proVideoUrl.value = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4';
+            showMessage('サンプル動画URLが入力されました。「動画を読み込む」ボタンを押してください。', 'success');
+        });
+
+
+        function checkIfBothVideosReady() {
+            if (isUserVideoReady && isProVideoReady) {
+                // Enable controls or provide feedback
+            }
+        }
+        
+        // --- Canvas Resizing ---
+        function resizeCanvas(videoElement, canvasElement, ctx) {
+            // Wait for video metadata to ensure dimensions are available
+            if (videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+                // Re-apply drawing settings if needed, as canvas context resets on resize
+                ctx.strokeStyle = lineColorInput.value;
+                ctx.lineWidth = lineWidthInput.value;
+                ctx.lineCap = 'round';
+            } else {
+                // If dimensions are not yet available, try again shortly
+                // This can happen if onloadedmetadata hasn't fully resolved dimensions
+                // or if the video source changes rapidly.
+                setTimeout(() => resizeCanvas(videoElement, canvasElement, ctx), 100);
+            }
+        }
+
+        userVideo.addEventListener('loadedmetadata', () => resizeCanvas(userVideo, userCanvas, userCtx));
+        proVideo.addEventListener('loadedmetadata', () => resizeCanvas(proVideo, proCanvas, proCtx));
+        // Also resize canvas if video element itself resizes (e.g. window resize affecting responsive video element)
+        new ResizeObserver(() => resizeCanvas(userVideo, userCanvas, userCtx)).observe(userVideo);
+        new ResizeObserver(() => resizeCanvas(proVideo, proCanvas, proCtx)).observe(proVideo);
+
+
+        // --- Synchronized Controls ---
+        let isPlayingSync = false;
+        playPauseSyncBtn.addEventListener('click', () => {
+            if (!userVideo.src || !proVideo.src) {
+                showMessage('両方の動画を読み込んでから操作してください。', 'error');
+                return;
+            }
+            if (isPlayingSync) {
+                userVideo.pause();
+                proVideo.pause();
+                playPauseSyncBtn.innerHTML = '<i class="fas fa-play mr-2"></i>再生/一時停止 (同期)';
+            } else {
+                userVideo.play();
+                proVideo.play();
+                playPauseSyncBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>再生/一時停止 (同期)';
+            }
+            isPlayingSync = !isPlayingSync;
+        });
+
+        // Sync playback state if one video is paused/played directly
+        function syncPlaybackState(masterVideo, slaveVideo) {
+            if (masterVideo.paused && !slaveVideo.paused) {
+                slaveVideo.pause();
+                isPlayingSync = false;
+                playPauseSyncBtn.innerHTML = '<i class="fas fa-play mr-2"></i>再生/一時停止 (同期)';
+            } else if (!masterVideo.paused && slaveVideo.paused) {
+                slaveVideo.play();
+                isPlayingSync = true;
+                playPauseSyncBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>再生/一時停止 (同期)';
+            }
+        }
+        userVideo.addEventListener('play', () => syncPlaybackState(userVideo, proVideo));
+        userVideo.addEventListener('pause', () => syncPlaybackState(userVideo, proVideo));
+        proVideo.addEventListener('play', () => syncPlaybackState(proVideo, userVideo));
+        proVideo.addEventListener('pause', () => syncPlaybackState(proVideo, userVideo));
+
+
+        syncTimesBtn.addEventListener('click', () => {
+            if (!userVideo.src || !proVideo.src) {
+                showMessage('両方の動画を読み込んでから操作してください。', 'error');
+                return;
+            }
+            proVideo.currentTime = userVideo.currentTime;
+            showMessage('プロ動画の再生位置をあなたの動画に同期しました。', 'success');
+        });
+        
+        // Sync seeking
+        let isSeekingUser = false;
+        let isSeekingPro = false;
+
+        userVideo.addEventListener('seeking', () => {
+            if (!isSeekingPro) {
+                isSeekingUser = true;
+                if (Math.abs(proVideo.currentTime - userVideo.currentTime) > 0.1) { // Threshold to prevent infinite loop
+                    proVideo.currentTime = userVideo.currentTime;
+                }
+            }
+        });
+        userVideo.addEventListener('seeked', () => {
+            isSeekingUser = false;
+        });
+
+        proVideo.addEventListener('seeking', () => {
+            if (!isSeekingUser) {
+                isSeekingPro = true;
+                 if (Math.abs(userVideo.currentTime - proVideo.currentTime) > 0.1) {
+                    userVideo.currentTime = proVideo.currentTime;
+                }
+            }
+        });
+        proVideo.addEventListener('seeked', () => {
+            isSeekingPro = false;
+        });
+
+        playbackRateSelect.addEventListener('change', (e) => {
+            const rate = parseFloat(e.target.value);
+            userVideo.playbackRate = rate;
+            proVideo.playbackRate = rate;
+            showMessage(`再生速度を ${rate}x に変更しました。`, 'success');
+        });
+
+        // --- Drawing Tools ---
+        let isDrawing = false;
+        let lastX, lastY;
+
+        function setupCanvas(canvas, ctx, videoElement) {
+            ctx.strokeStyle = lineColorInput.value;
+            ctx.lineWidth = lineWidthInput.value;
+            ctx.lineCap = 'round';
+
+            function getMousePos(evt) {
+                const rect = canvas.getBoundingClientRect();
+                // Adjust for canvas scaling if its display size differs from its resolution
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                let clientX, clientY;
+                if (evt.touches && evt.touches.length > 0) {
+                    clientX = evt.touches[0].clientX;
+                    clientY = evt.touches[0].clientY;
+                } else {
+                    clientX = evt.clientX;
+                    clientY = evt.clientY;
+                }
+
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            }
+
+            function startDrawing(e) {
+                if (videoElement.paused) {
+                    isDrawing = true;
+                    const pos = getMousePos(e);
+                    [lastX, lastY] = [pos.x, pos.y];
+                    e.preventDefault(); // Prevent page scroll on touch
+                } else {
+                    showMessage('描画するには動画を一時停止してください。', 'error');
+                }
+            }
+
+            function draw(e) {
+                if (!isDrawing || !videoElement.paused) return;
+                const pos = getMousePos(e);
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                [lastX, lastY] = [pos.x, pos.y];
+                e.preventDefault(); // Prevent page scroll on touch
+            }
+
+            function stopDrawing(e) {
+                if (!isDrawing) return;
+                isDrawing = false;
+                e.preventDefault();
+            }
+            
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing); // Stop drawing if mouse leaves canvas
+
+            // Touch events
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+            canvas.addEventListener('touchcancel', stopDrawing);
+        }
+        
+        setupCanvas(userCanvas, userCtx, userVideo);
+        setupCanvas(proCanvas, proCtx, proVideo);
+
+        lineColorInput.addEventListener('change', (e) => {
+            userCtx.strokeStyle = e.target.value;
+            proCtx.strokeStyle = e.target.value;
+        });
+
+        lineWidthInput.addEventListener('input', (e) => {
+            userCtx.lineWidth = e.target.value;
+            proCtx.lineWidth = e.target.value;
+            lineWidthValueSpan.textContent = e.target.value;
+        });
+
+        clearUserCanvasBtn.addEventListener('click', () => {
+            userCtx.clearRect(0, 0, userCanvas.width, userCanvas.height);
+            showMessage('あなたの動画の描画を消去しました。', 'success');
+        });
+
+        clearProCanvasBtn.addEventListener('click', () => {
+            proCtx.clearRect(0, 0, proCanvas.width, proCanvas.height);
+            showMessage('プロ動画の描画を消去しました。', 'success');
+        });
+
+        // Initial canvas setup in case videos are pre-loaded or for styling
+        // This will be properly called again on 'loadedmetadata'
+        window.addEventListener('load', () => {
+            resizeCanvas(userVideo, userCanvas, userCtx);
+            resizeCanvas(proVideo, proCanvas, proCtx);
+        });
+
+
+    </script>
+</body>
+</html>
